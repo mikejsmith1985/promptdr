@@ -64,17 +64,42 @@ def build(user_input: str, no_git: bool, raw: bool, prefix: str) -> str:
     return base if raw else f"{base}\n\nBegin PHASE 1 now."
 
 def main():
-    p = argparse.ArgumentParser(description="PromptDr")
-    p.add_argument("text", nargs="+", help="Your prompt")
-    p.add_argument("--no-git", action="store_true")
-    p.add_argument("--raw", action="store_true")
-    p.add_argument("--prefix", default="", help='e.g. "You are Grok 4."')
-    a = p.parse_args()
+    # If input is piped or no arguments given → read from stdin
+    if not sys.stdin.isatty() or (len(sys.argv) == 1):
+        user_input = sys.stdin.read().strip()
+        if not user_input:
+            print("Error: No input provided", file=sys.stderr)
+            sys.exit(1)
+        # We still want to support flags when using stdin, so parse them first
+        # We'll re-parse below with full args
+        args = sys.argv[1:]
+    else:
+        # Normal CLI mode
+        parser = argparse.ArgumentParser(description="PromptDr")
+        parser.add_argument("text", nargs="+", help="Your prompt")
+        parser.add_argument("--no-git", action="store_true")
+        parser.add_argument("--raw", action="store_true")
+        parser.add_argument("--prefix", default="", help='e.g. "You are Grok 4."')
+        args = parser.parse_args()
+        user_input = " ".join(args.text)
+        no_git = args.no_git
+        raw = args.raw
+        prefix = args.prefix
+        build_and_output(user_input, no_git, raw, prefix)  # ← this line was missing before
 
-    prompt = build(" ".join(a.text), a.no_git, a.raw, a.prefix)
+    # Parse flags even when input comes from stdin/pipe
+    parser = argparse.ArgumentParser(description="PromptDr")
+    parser.add_argument("text", nargs="*", help="Your prompt (ignored when reading from stdin)")
+    parser.add_argument("--no-git", action="store_true")
+    parser.add_argument("--raw", action="store_true")
+    parser.add_argument("--prefix", default="", help='e.g. "You are Grok 4."')
+    args = parser.parse_args(args)  # parse the flags we saved earlier
+
+    build_and_output(user_input, args.no_git, args.raw, args.prefix)
+
+
+def build_and_output(user_input: str, no_git: bool, raw: bool, prefix: str):
+    prompt = build(user_input, no_git, raw, prefix)
     print("\n" + prompt + "\n")
     pyperclip.copy(prompt)
     print("Copied to clipboard")
-
-if __name__ == "__main__":
-    main()
