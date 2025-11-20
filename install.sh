@@ -1,22 +1,26 @@
 #!/usr/bin/env bash
 set -e
 
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
+REPO="mikejsmith1985/promptdr"
+TAG="latest"
 
-case $OS in
-  linux)  BINARY="pdr" ;;
-  darwin) BINARY="pdr-mac" ;;
-  mingw*|cygwin*|msys*) BINARY="pdr.exe"; OS="windows" ;;
-  *) echo "Unsupported OS: $OS"; exit 1 ;;
+case "$(uname -s)" in
+  Linux*)   BINARY="pdr-linux" ;;
+  Darwin*)  BINARY="pdr-macos" ;;
+  CYGWIN*|MINGW32*|MSYS*|MINGW*) BINARY="pdr-windows.exe" ;;
+  *) echo "Unsupported OS: $(uname -s)"; exit 1 ;;
 esac
 
-URL="https://github.com/mikejsmith1985/promptdr/releases/latest/download/$BINARY"
-DEST="$$ HOME/bin/pdr $${BINARY#*.pdr}"  # keeps .exe on Windows
+URL="https://github.com/$REPO/releases/$TAG/download/$BINARY"
 
 mkdir -p "$HOME/bin"
-curl -L "$URL" -o "$DEST"
-chmod +x "$DEST"
+curl -L "$URL" -o "$HOME/bin/pdr"
+chmod +x "$HOME/bin/pdr"
 
-echo "PromptDr installed to $DEST"
-echo "Run: pdr \"your prompt here\""
+# Ensure ~/bin is in PATH
+if ! echo "$PATH" | grep -q "$HOME/bin"; then
+  echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
+  echo "Added ~/bin to PATH (run 'source ~/.bashrc' or restart terminal)"
+fi
+
+echo "PromptDr installed! Use: pdr <your prompt> or just paste raw text"
