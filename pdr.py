@@ -72,16 +72,9 @@ def build_and_output(user_input: str, no_git: bool, raw: bool, prefix: str) -> N
     pyperclip.copy(prompt)
     print("Copied to clipboard")
 
-
 def main() -> None:
-    # Read from stdin if piped or no arguments given
-    if not sys.stdin.isatty() or len(sys.argv) == 1:
-        user_input = sys.stdin.read().strip()
-        if not user_input:
-            print("PromptDr – paste your rage or use: pdr \"your prompt\"", file=sys.stderr)
-            sys.exit(1)
-        argv = sys.argv[1:] if sys.argv[1:] else []
-    else:
+    # If anything is passed as args → treat as normal CLI (even if it contains newlines)
+    if len(sys.argv) > 1:
         parser = argparse.ArgumentParser(description="PromptDr")
         parser.add_argument("text", nargs="+", help="Your prompt")
         parser.add_argument("--no-git", action="store_true")
@@ -92,16 +85,30 @@ def main() -> None:
         build_and_output(user_input, args.no_git, args.raw, args.prefix)
         return
 
-    # Parse flags for stdin/pipe mode
+    # No args → read from stdin, but finish on single blank line (Enter twice)
+    print("Paste your rage and press Enter twice when done:")
+    lines = []
+    while True:
+        try:
+            line = input()
+        except EOFError:
+            break
+        if line == "" and lines and lines[-1] == "":
+            break
+        lines.append(line)
+    user_input = "\n".join(lines).strip()
+    if not user_input:
+        print("No input — exiting", file=sys.stderr)
+        sys.exit(1)
+
+    # Parse flags after reading stdin (if any were given before the paste)
     parser = argparse.ArgumentParser(description="PromptDr")
-    parser.add_argument("text", nargs="*", help="Ignored when reading from stdin")
     parser.add_argument("--no-git", action="store_true")
     parser.add_argument("--raw", action="store_true")
     parser.add_argument("--prefix", default="", help='e.g. "You are Grok 4."')
-    args = parser.parse_args(argv)
+    args, _ = parser.parse_known_args()
 
     build_and_output(user_input, args.no_git, args.raw, args.prefix)
-
 
 if __name__ == "__main__":
     main()
