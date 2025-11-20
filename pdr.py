@@ -1,30 +1,47 @@
+# 1. Replace pdr.py with this updated version (copy-paste exactly
+cat > pdr.py << 'EOF'
 #!/usr/bin/env python3
 """
 PromptDr – turns garbage input into a nuclear 2-phase prompt
 Usage: pdr "this is broken again"
 """
-import argparse, subprocess, sys
+import argparse
+import subprocess
+import sys
 from pathlib import Path
+
 import pyperclip
-try:
-    from notifypy import Notify
-    notify = Notify()
-except ImportError:
-    notify = None
 
 GLOBAL_RULES = Path.home() / ".promptdr" / "rules.md"
 LOCAL_MD = "PromptDr.md"
 
 def git_root() -> Path | None:
     try:
-        return Path(subprocess.check_output(["git","rev-parse","--show-toplevel"],text=True).strip())
+        root = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            cwd=Path.cwd(),
+        ).strip()
+        return Path(root)
     except:
         return None
 
 def git_status() -> str:
     try:
-        branch = subprocess.check_output(["git","rev-parse","--abbrev-ref","HEAD"],text=True).strip()
-        dirty = "DIRTY" if subprocess.check_output(["git","status","--porcelain"],text=True).strip() else "CLEAN"
+        branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            cwd=Path.cwd(),
+        ).strip()
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            cwd=Path.cwd(),
+        ).strip()
+        dirty = "DIRTY" if status else "CLEAN"
         return f"Branch: {branch} | Status: {dirty}"
     except:
         return "No git repository"
@@ -60,12 +77,11 @@ def main():
     prompt = build(" ".join(a.text), a.no_git, a.raw, a.prefix)
     print("\n" + prompt + "\n")
     pyperclip.copy(prompt)
-    if notify:
-        notify.title = "PromptDr"
-        notify.message = "Nuclear prompt ready"
-        notify.send()
-    else:
-        print("Copied to clipboard")
+    print("Copied to clipboard")
 
 if __name__ == "__main__":
     main()
+EOF
+
+# 2. Test it
+python pdr.py "this is a test prompt please say hello"
