@@ -86,7 +86,7 @@ def main() -> None:
         return
 
     # No args → read from stdin, but finish on single blank line (Enter twice)
-    print("Paste your rage and press Enter twice when done:")
+    print("Paste your input below. Finish with a blank line (press Enter twice):")
     lines = []
     while True:
         try:
