@@ -23,4 +23,17 @@ if ! echo "$PATH" | grep -q "$HOME/bin"; then
   echo "Added ~/bin to PATH (run 'source ~/.bashrc' or restart terminal)"
 fi
 
-echo "PromptDr installed! Use: pdr <your prompt> or just paste raw text"
+echo "PromptDr installed!"
+echo ""
+echo "Usage:"
+echo "  Short prompts → pdr hello world"
+echo "  Long / rage / multi-line prompts → use a here-document:"
+echo "    pdr << 'EOF'"
+echo "    your entire wall of text here"
+echo "    EOF"
+echo ""
+echo "  Alternative (also safe):"
+echo "    pdr 'your entire prompt in single quotes'"
+echo ""
+echo "The here-document (<< 'EOF') is the most reliable method in VS Code + WSL."
+echo "It never fails — no matter how many quotes, parentheses, or newlines you have."

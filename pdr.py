@@ -89,11 +89,12 @@ def main() -> None:
         build_and_output(user_input, args.no_git, args.raw, args.prefix)
         return
 
-    # No args → read from stdin (pipe or redirected input)
-    user_input = sys.stdin.read().strip()
-    if not user_input:
-        print("PromptDr – use: pdr \"your prompt\"  or  pdr 'multi-line prompt'  or  cat file | pdr", file=sys.stderr)
+    # No args → read from stdin (pipe or accidental paste)
+    user_input = sys.stdin.read()
+    if not user_input.strip():
+        print("PromptDr – no input detected. Paste and press Enter, or use quotes.", file=sys.stderr)
         sys.exit(1)
+    user_input = user_input.rstrip()  # only remove trailing whitespace, keep internal newlines
 
     # Parse flags for pipe mode
     parser = argparse.ArgumentParser(description="PromptDr")
