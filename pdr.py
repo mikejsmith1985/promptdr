@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PromptDr – turns garbage input into a nuclear 2-phase prompt
-Usage: pdr "this is broken again"
+Usage: pdr "this is broken again"   or just paste raw text
 """
 import argparse
 import subprocess
@@ -23,6 +23,7 @@ def git_root() -> Path | None:
     except:
         return None
 
+
 def git_status() -> str:
     try:
         branch = subprocess.check_output(
@@ -42,12 +43,12 @@ def git_status() -> str:
     except:
         return "No git repository"
 
+
 def load_rules(root: Path | None) -> str:
     if root:
         local = root / "PromptDr.md"
         if local.exists():
             return local.read_text().strip()
-    # No global file anymore — just the hard-coded fallback
     return """You are an elite full-stack engineer with 15+ years of experience.
 NEVER ask for permission or confirmation.
 NEVER use placeholders or truncate code.
@@ -56,6 +57,7 @@ Work in exactly two phases:
   PHASE 1 → detailed plan + complete code
   PHASE 2 → fix loop until perfect"""
 
+
 def build(user_input: str, no_git: bool, raw: bool, prefix: str) -> str:
     root = git_root()
     rules = load_rules(root)
@@ -63,18 +65,23 @@ def build(user_input: str, no_git: bool, raw: bool, prefix: str) -> str:
     base = f"{prefix}{rules}\n{git}\n=== USER INPUT ===\n{user_input}"
     return base if raw else f"{base}\n\nBegin PHASE 1 now."
 
-def main():
-    # If input is piped or no arguments given → read from stdin
-    if not sys.stdin.isatty() or (len(sys.argv) == 1):
+
+def build_and_output(user_input: str, no_git: bool, raw: bool, prefix: str) -> None:
+    prompt = build(user_input, no_git, raw, prefix)
+    print("\n" + prompt + "\n")
+    pyperclip.copy(prompt)
+    print("Copied to clipboard")
+
+
+def main() -> None:
+    # Read from stdin if piped or no arguments given
+    if not sys.stdin.isatty() or len(sys.argv) == 1:
         user_input = sys.stdin.read().strip()
         if not user_input:
-            print("Error: No input provided", file=sys.stderr)
+            print("PromptDr – paste your rage or use: pdr \"your prompt\"", file=sys.stderr)
             sys.exit(1)
-        # We still want to support flags when using stdin, so parse them first
-        # We'll re-parse below with full args
-        args = sys.argv[1:]
+        argv = sys.argv[1:] if sys.argv[1:] else []
     else:
-        # Normal CLI mode
         parser = argparse.ArgumentParser(description="PromptDr")
         parser.add_argument("text", nargs="+", help="Your prompt")
         parser.add_argument("--no-git", action="store_true")
@@ -82,24 +89,19 @@ def main():
         parser.add_argument("--prefix", default="", help='e.g. "You are Grok 4."')
         args = parser.parse_args()
         user_input = " ".join(args.text)
-        no_git = args.no_git
-        raw = args.raw
-        prefix = args.prefix
-        build_and_output(user_input, no_git, raw, prefix)  # ← this line was missing before
+        build_and_output(user_input, args.no_git, args.raw, args.prefix)
+        return
 
-    # Parse flags even when input comes from stdin/pipe
+    # Parse flags for stdin/pipe mode
     parser = argparse.ArgumentParser(description="PromptDr")
-    parser.add_argument("text", nargs="*", help="Your prompt (ignored when reading from stdin)")
+    parser.add_argument("text", nargs="*", help="Ignored when reading from stdin")
     parser.add_argument("--no-git", action="store_true")
     parser.add_argument("--raw", action="store_true")
     parser.add_argument("--prefix", default="", help='e.g. "You are Grok 4."')
-    args = parser.parse_args(args)  # parse the flags we saved earlier
+    args = parser.parse_args(argv)
 
     build_and_output(user_input, args.no_git, args.raw, args.prefix)
 
 
-def build_and_output(user_input: str, no_git: bool, raw: bool, prefix: str):
-    prompt = build(user_input, no_git, raw, prefix)
-    print("\n" + prompt + "\n")
-    pyperclip.copy(prompt)
-    print("Copied to clipboard")
+if __name__ == "__main__":
+    main()
