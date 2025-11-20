@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PromptDr – turns garbage input into a nuclear 2-phase prompt
-Usage: pdr "this is broken again"   or just paste raw text
+Usage: pdr "hello"   or   pdr 'long multi-line prompt'   or   cat file.txt | pdr
 """
 import argparse
 import subprocess
@@ -72,36 +72,30 @@ def build_and_output(user_input: str, no_git: bool, raw: bool, prefix: str) -> N
     pyperclip.copy(prompt)
     print("Copied to clipboard")
 
+
 def main() -> None:
-    # If anything is passed as args → treat as normal CLI (even if it contains newlines)
+    # If any arguments are given → treat as prompt (handles multi-line via quotes)
     if len(sys.argv) > 1:
         parser = argparse.ArgumentParser(description="PromptDr")
-        parser.add_argument("text", nargs="+", help="Your prompt")
+        parser.add_argument("text", nargs=argparse.REMAINDER, help="Your prompt")
         parser.add_argument("--no-git", action="store_true")
         parser.add_argument("--raw", action="store_true")
         parser.add_argument("--prefix", default="", help='e.g. "You are Grok 4."')
         args = parser.parse_args()
-        user_input = " ".join(args.text)
+        user_input = " ".join(args.text).strip()
+        if not user_input:
+            print("Error: No prompt provided", file=sys.stderr)
+            sys.exit(1)
         build_and_output(user_input, args.no_git, args.raw, args.prefix)
         return
 
-    # No args → read from stdin, but finish on single blank line (Enter twice)
-    print("Paste your input below. Finish with a blank line (press Enter twice):")
-    lines = []
-    while True:
-        try:
-            line = input()
-        except EOFError:
-            break
-        if line == "" and lines and lines[-1] == "":
-            break
-        lines.append(line)
-    user_input = "\n".join(lines).strip()
+    # No args → read from stdin (pipe or redirected input)
+    user_input = sys.stdin.read().strip()
     if not user_input:
-        print("No input — exiting", file=sys.stderr)
+        print("PromptDr – use: pdr \"your prompt\"  or  pdr 'multi-line prompt'  or  cat file | pdr", file=sys.stderr)
         sys.exit(1)
 
-    # Parse flags after reading stdin (if any were given before the paste)
+    # Parse flags for pipe mode
     parser = argparse.ArgumentParser(description="PromptDr")
     parser.add_argument("--no-git", action="store_true")
     parser.add_argument("--raw", action="store_true")
@@ -109,6 +103,7 @@ def main() -> None:
     args, _ = parser.parse_known_args()
 
     build_and_output(user_input, args.no_git, args.raw, args.prefix)
+
 
 if __name__ == "__main__":
     main()
