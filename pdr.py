@@ -1,5 +1,3 @@
-# 1. Replace pdr.py with this updated version (copy-paste exactly
-cat > pdr.py << 'EOF'
 #!/usr/bin/env python3
 """
 PromptDr – turns garbage input into a nuclear 2-phase prompt
@@ -12,8 +10,6 @@ from pathlib import Path
 
 import pyperclip
 
-GLOBAL_RULES = Path.home() / ".promptdr" / "rules.md"
-LOCAL_MD = "PromptDr.md"
 
 def git_root() -> Path | None:
     try:
@@ -47,10 +43,11 @@ def git_status() -> str:
         return "No git repository"
 
 def load_rules(root: Path | None) -> str:
-    local = root / LOCAL_MD if root else None
-    path = local if local and local.exists() else GLOBAL_RULES
-    if path.exists():
-        return path.read_text().strip()
+    if root:
+        local = root / "PromptDr.md"
+        if local.exists():
+            return local.read_text().strip()
+    # No global file anymore — just the hard-coded fallback
     return """You are an elite full-stack engineer with 15+ years of experience.
 NEVER ask for permission or confirmation.
 NEVER use placeholders or truncate code.
@@ -81,7 +78,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-EOF
-
-# 2. Test it
-python pdr.py "this is a test prompt please say hello"
